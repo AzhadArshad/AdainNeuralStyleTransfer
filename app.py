@@ -35,7 +35,7 @@ device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is
 
 encoder = VGGEncoder('vgg_normalised.pth').to(device)
 decoder = Decoder().to(device)
-decoder.load_state_dict(torch.load('decoder.pth', weights_only=True))
+decoder.load_state_dict(torch.load('decoder.pth', map_location=device))
 
 encoder.eval()
 decoder.eval()
