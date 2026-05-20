@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StyleForge AI — Neural Style Transfer</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --bg-deep:    #060b18;
+        --bg-card:    rgba(10, 16, 32, 0.8);
+        --accent-1:   #6366f1;
+        --accent-2:   #a855f7;
+        --accent-3:   #ec4899;
+        --text-pri:   #e2e8f0;
+        --text-muted: #475569;
+        --border-sub: rgba(255,255,255,0.06);
+        --border-acc: rgba(99,102,241,0.35);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+        font-family: 'Inter', sans-serif;
+        background-color: var(--bg-deep);
+        color: var(--text-pri);
+        background-image:
+            radial-gradient(ellipse 80% 50% at 15% 15%, rgba(99,102,241,0.09) 0%, transparent 60%),
+            radial-gradient(ellipse 70% 50% at 85% 85%, rgba(168,85,247,0.09) 0%, transparent 60%);
+        min-height: 100vh;
+    }
+
+    /* ── Navbar ── */
+    .navbar {
+        background: rgba(6,11,24,0.88);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+        border-bottom: 1px solid var(--border-sub);
+        padding: 0.85rem 0;
+    }
+    .navbar-brand {
+        font-family: 'Orbitron', sans-serif;
+        font-weight: 700;
+        font-size: 1.25rem;
+        background: linear-gradient(135deg, #818cf8, #c084fc);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        letter-spacing: 1px;
+    }
+    .nav-link {
+        color: var(--text-muted) !important;
+        font-weight: 500;
+        font-size: 0.88rem;
+        margin-left: 0.4rem;
+        transition: color 0.25s;
+        position: relative;
+    }
+    .nav-link:hover { color: #a5b4fc !important; }
+    .nav-link::after {
+        content: '';
+        position: absolute;
+        width: 0; height: 1.5px;
+        bottom: -2px; left: 0;
+        background: linear-gradient(90deg, #6366f1, #a855f7);
+        transition: width 0.25s;
+        border-radius: 2px;
+    }
+    .nav-link:hover::after { width: 100%; }
+
+    /* ── Header ── */
+    .header-section {
+        padding: 7rem 0 3.5rem;
+        text-align: center;
+        position: relative;
+    }
+    .header-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(99,102,241,0.1);
+        border: 1px solid rgba(99,102,241,0.28);
+        color: #a5b4fc;
+        padding: 5px 18px;
+        border-radius: 50px;
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        margin-bottom: 1.6rem;
+    }
+    .header-badge .dot {
+        width: 6px; height: 6px;
+        background: #6366f1;
+        border-radius: 50%;
+        animation: pulse-dot 2s ease-in-out infinite;
+    }
+    @keyframes pulse-dot {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50%       { opacity: 0.4; transform: scale(0.75); }
+    }
+    .header-section h1 {
+        font-family: 'Orbitron', sans-serif;
+        font-weight: 700;
+        font-size: clamp(2.6rem, 6vw, 4.4rem);
+        background: linear-gradient(135deg, #a5b4fc 0%, #c084fc 55%, #f472b6 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        letter-spacing: -0.5px;
+        line-height: 1.1;
+        margin-bottom: 1.2rem;
+    }
+    .header-section .lead {
+        font-size: 1.1rem;
+        color: var(--text-muted);
+        max-width: 500px;
+        margin: 0 auto;
+        line-height: 1.75;
+        font-weight: 300;
+        border-right: 2px solid rgba(255,255,255,0.6);
+        white-space: nowrap;
+        overflow: hidden;
+        width: 0;
+        animation: typing 3.5s steps(40,end) forwards, blink-caret .75s step-end infinite;
+        display: inline-block;
+        text-align: left;
+    }
+
+    /* ── Cards ── */
+    .card {
+        background: var(--bg-card);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+        border: 1px solid var(--border-sub);
+        border-radius: 20px;
+        box-shadow: 0 4px 28px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.04);
+        transition: border-color 0.3s, box-shadow 0.3s, transform 0.3s;
+        overflow: hidden;
+    }
+    .card:hover {
+        border-color: var(--border-acc);
+        box-shadow: 0 8px 48px rgba(99,102,241,0.14), 0 4px 28px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.06);
+        transform: translateY(-2px);
+    }
+    .card-header {
+        background: rgba(255,255,255,0.025);
+        border-bottom: 1px solid var(--border-sub);
+        color: #64748b;
+        font-family: 'Orbitron', sans-serif;
+        letter-spacing: 2.5px;
+        text-transform: uppercase;
+        font-size: 0.68rem;
+        font-weight: 700;
+        padding: 1rem 1.5rem;
+    }
+
+    /* ── Upload Zone ── */
+    .preview-image {
+        width: 100%;
+        height: 260px;
+        border: 1.5px dashed rgba(99,102,241,0.28);
+        border-radius: 14px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-muted);
+        font-size: 0.85rem;
+        overflow: hidden;
+        background: rgba(6,11,24,0.55);
+        transition: border-color 0.3s, background 0.3s;
+        cursor: pointer;
+        gap: 10px;
+        font-weight: 500;
+    }
+    .preview-image:hover {
+        border-color: rgba(99,102,241,0.55);
+        background: rgba(99,102,241,0.04);
+    }
+    .preview-image .upload-icon {
+        font-size: 1.8rem;
+        color: #1e293b;
+        transition: color 0.3s, transform 0.3s;
+    }
+    .preview-image:hover .upload-icon {
+        color: #6366f1;
+        transform: translateY(-3px);
+    }
+    .preview-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+
+    /* ── File Input ── */
+    .form-control {
+        background-color: rgba(10,16,32,0.85);
+        border: 1px solid rgba(255,255,255,0.07);
+        color: #f8fafc;
+        border-radius: 10px;
+        transition: border-color 0.2s, box-shadow 0.2s;
+        font-size: 0.9rem;
+    }
+    .form-control:focus {
+        background-color: rgba(10,16,32,0.95);
+        border-color: #6366f1;
+        color: #f8fafc;
+        box-shadow: 0 0 0 3px rgba(99,102,241,0.14);
+        outline: none;
+    }
+    .form-control::file-selector-button {
+        background: linear-gradient(135deg, #6366f1, #a855f7);
+        color: #fff;
+        border: none;
+        padding: 0.38rem 1rem;
+        margin-right: 0.75rem;
+        border-radius: 6px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: opacity 0.2s;
+        letter-spacing: 0.3px;
+    }
+    .form-control::file-selector-button:hover { opacity: 0.82; }
+
+    /* ── Range Slider ── */
+    .range-wrap {
+        position: relative;
+        margin: 2.5rem auto 0;
+        width: 100%;
+        max-width: 92%;
+    }
+    .range-label {
+        font-family: 'Orbitron', sans-serif;
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 3px;
+        color: #6366f1;
+        text-transform: uppercase;
+        text-align: center;
+        margin-bottom: 1.2rem;
+        display: block;
+    }
+    #alphaRange {
+        -webkit-appearance: none;
+        width: 100%;
+        height: 5px;
+        background: rgba(30,41,59,0.95);
+        border-radius: 5px;
+        outline: none;
+        border: none;
+        transition: background 0.1s;
+    }
+    #alphaRange::-webkit-slider-runnable-track {
+        width: 100%; height: 100%; cursor: pointer; background: transparent;
+    }
+    #alphaRange::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        height: 20px; width: 20px;
+        border-radius: 50%;
+        background: #fff;
+        cursor: pointer;
+        margin-top: -8px;
+        box-shadow: 0 0 0 3px rgba(99,102,241,0.25), 0 0 16px rgba(168,85,247,0.55);
+        border: 2px solid #6366f1;
+        transition: transform 0.15s, box-shadow 0.15s;
+    }
+    #alphaRange::-webkit-slider-thumb:hover,
+    #alphaRange:active::-webkit-slider-thumb {
+        transform: scale(1.25);
+        box-shadow: 0 0 0 5px rgba(99,102,241,0.14), 0 0 24px rgba(168,85,247,0.75);
+    }
+    .range-value {
+        position: absolute;
+        top: -36px;
+        background: rgba(10,16,32,0.97);
+        border: 1px solid rgba(99,102,241,0.38);
+        color: #a5b4fc;
+        padding: 3px 10px;
+        border-radius: 7px;
+        font-family: 'Orbitron', sans-serif;
+        font-size: 0.75rem;
+        font-weight: 700;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.2s;
+        transform: translateX(-50%);
+        white-space: nowrap;
+    }
+    .range-value::after {
+        content: '';
+        position: absolute;
+        bottom: -5px; left: 50%; margin-left: -4px;
+        border-width: 4px 4px 0;
+        border-style: solid;
+        border-color: rgba(99,102,241,0.38) transparent transparent transparent;
+    }
+    .range-wrap:hover .range-value { opacity: 1; }
+
+    /* ── Button ── */
+    .btn-primary {
+        background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+        border: none;
+        padding: 14px 52px;
+        font-size: 0.9rem;
+        font-family: 'Orbitron', sans-serif;
+        border-radius: 50px;
+        transition: all 0.3s;
+        text-transform: uppercase;
+        letter-spacing: 3px;
+        font-weight: 700;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 8px 32px -8px rgba(99,102,241,0.55);
+    }
+    .btn-primary::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.16) 50%, transparent 60%);
+        transform: translateX(-120%);
+        transition: transform 0.55s ease;
+    }
+    .btn-primary:hover::after { transform: translateX(120%); }
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #4f46e5 0%, #9333ea 100%);
+        box-shadow: 0 12px 40px -8px rgba(99,102,241,0.65);
+        transform: translateY(-1px);
+    }
+    .btn-primary:active { transform: translateY(0px); }
+    .btn-glow { animation: btn-pulse 3s ease-in-out infinite; }
+    @keyframes btn-pulse {
+        0%, 100% { box-shadow: 0 8px 32px -8px rgba(99,102,241,0.55); }
+        50%       { box-shadow: 0 8px 44px -4px rgba(168,85,247,0.65); }
+    }
+
+    /* ── Result Card ── */
+    .result-card {
+        border-color: rgba(16,185,129,0.28) !important;
+        box-shadow: 0 0 48px rgba(16,185,129,0.08), 0 4px 28px rgba(0,0,0,0.45) !important;
+    }
+    .result-header {
+        background: rgba(16,185,129,0.1) !important;
+        border-bottom: 1px solid rgba(16,185,129,0.18) !important;
+        color: #6ee7b7 !important;
+        font-family: 'Orbitron', sans-serif;
+        letter-spacing: 2.5px;
+        text-transform: uppercase;
+        font-size: 0.68rem;
+        font-weight: 700;
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 7px; }
+    ::-webkit-scrollbar-track { background: #060b18; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #6366f1; }
+
+    /* ── Ambient Orbs ── */
+    .orb {
+        position: fixed; border-radius: 50%;
+        filter: blur(120px); z-index: 0; pointer-events: none;
+        animation: floatOrb 22s ease-in-out infinite alternate;
+    }
+    .orb-1 { top: -15%; left: -10%; width: 700px; height: 700px; background: radial-gradient(circle, rgba(99,102,241,0.22), transparent 70%); opacity: 0.65; }
+    .orb-2 { bottom: -15%; right: -10%; width: 600px; height: 600px; background: radial-gradient(circle, rgba(168,85,247,0.22), transparent 70%); opacity: 0.55; animation-delay: -8s; }
+    .orb-3 { top: 38%; left: 44%; width: 380px; height: 380px; background: radial-gradient(circle, rgba(236,72,153,0.14), transparent 70%); opacity: 0.3; animation-delay: -14s; }
+    @keyframes floatOrb {
+        0%   { transform: translate(0, 0) scale(1); }
+        100% { transform: translate(45px, 55px) scale(1.07); }
+    }
+
+    /* ── Scanlines ── */
+    .scanlines {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.025) 2px, rgba(0,0,0,0.025) 4px);
+        z-index: 9998; pointer-events: none; opacity: 0.5;
+    }
+
+    /* ── Canvas ── */
+    #neuralCanvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+    .header-section, .container, .footer-section { position: relative; z-index: 1; }
+
+    /* ── Fade-in ── */
+    .fade-in-up {
+        animation: fadeInUp 0.9s cubic-bezier(0.16,1,0.3,1) forwards;
+        opacity: 0; transform: translateY(20px);
+    }
+    @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
+
+    /* ── Loader ── */
+    .loader-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(6,11,24,0.93);
+        backdrop-filter: blur(10px);
+        z-index: 9999;
+        display: flex; align-items: center; justify-content: center; flex-direction: column;
+        opacity: 0; pointer-events: none; transition: opacity 0.3s;
+    }
+    .loader-overlay.active { opacity: 1; pointer-events: all; }
+    .cyber-spinner {
+        width: 60px; height: 60px;
+        border: 2.5px solid rgba(255,255,255,0.04);
+        border-top: 2.5px solid #6366f1;
+        border-right: 2.5px solid #a855f7;
+        border-radius: 50%;
+        animation: spin 0.85s linear infinite;
+        box-shadow: 0 0 24px rgba(99,102,241,0.35);
+        margin-bottom: 1.5rem;
+    }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+
+    /* ── Examples ── */
+    .examples-section { margin-top: 4rem; }
+    .examples-section .example-image {
+        width: 100%; height: 200px; object-fit: contain; border-radius: 12px;
+        border: 1px solid rgba(255,255,255,0.06);
+        background: rgba(6,11,24,0.7);
+        transition: border-color 0.3s;
+    }
+    .examples-section .example-image:hover { border-color: rgba(99,102,241,0.38); }
+    .examples-section .example-role {
+        font-size: 0.68rem; font-weight: 700; letter-spacing: 0.12em;
+        color: #334155; margin-bottom: 0.5rem; text-transform: uppercase; text-align: center;
+    }
+    .examples-section .example-flow {
+        display: flex; align-items: center; gap: 1.5rem;
+        padding: 1.5rem; border-radius: 16px;
+        background: rgba(6,11,24,0.5);
+        border: 1px solid rgba(255,255,255,0.05);
+    }
+    .examples-section .example-inputs { flex: 1; display: grid; gap: 1rem; }
+    .examples-section .example-output { flex: 1; }
+    .examples-section .example-arrow { color: #6366f1; font-size: 1.4rem; font-weight: 700; opacity: 0.6; }
+    @media (max-width: 767.98px) {
+        .examples-section .example-flow { flex-direction: column; }
+        .examples-section .example-arrow { transform: rotate(90deg); }
+    }
+
+    /* ── FAQ ── */
+    .faq-section { margin-top: 4rem; }
+    .faq-section .accordion-item {
+        background: rgba(10,16,32,0.75) !important;
+        border: 1px solid rgba(255,255,255,0.055) !important;
+        margin-bottom: 0.55rem; border-radius: 12px !important; overflow: hidden;
+    }
+    .faq-section .accordion-button {
+        background: transparent; color: #94a3b8; font-weight: 500; font-size: 0.92rem;
+        border-radius: 12px !important;
+    }
+    .faq-section .accordion-button:not(.collapsed) {
+        background: rgba(99,102,241,0.07); color: #f8fafc; box-shadow: none;
+    }
+    .faq-section .accordion-button:focus { box-shadow: none; }
+    .faq-section .accordion-button::after { filter: invert(1) opacity(0.35); }
+    .faq-section .accordion-body { color: #475569; font-size: 0.88rem; line-height: 1.75; padding-top: 0; }
+
+    /* ── Footer ── */
+    .footer-section {
+        background: rgba(4,7,14,0.98);
+        border-top: 1px solid rgba(255,255,255,0.04);
+        padding: 4rem 0 2rem; margin-top: 5rem; color: #334155;
+    }
+    .footer-section h5 {
+        color: #e2e8f0; font-family: 'Orbitron', sans-serif;
+        margin-bottom: 1.5rem; font-size: 0.82rem; letter-spacing: 2px;
+    }
+    .footer-link {
+        color: #334155; text-decoration: none; transition: color 0.25s;
+        display: block; margin-bottom: 0.65rem; font-size: 0.88rem;
+    }
+    .footer-link:hover { color: #a5b4fc; }
+    .social-icon {
+        width: 36px; height: 36px;
+        display: inline-flex; align-items: center; justify-content: center;
+        background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 50%; color: #475569; margin-right: 8px;
+        transition: all 0.25s; text-decoration: none; font-size: 0.85rem;
+    }
+    .social-icon:hover { background: #6366f1; border-color: #6366f1; color: white; transform: translateY(-2px); }
+
+    /* ── Typing animation ── */
+    @keyframes typing {
+        from { width: 0 }
+        to   { width: 100% }
+    }
+    @keyframes blink-caret {
+        from, to { border-color: transparent }
+        50%      { border-color: rgba(255,255,255,0.65); }
+    }
+</style>
+</head>
+<body>
+
+<canvas id="neuralCanvas"></canvas>
+<div class="scanlines"></div>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<nav class="navbar navbar-expand-lg fixed-top">
+    <div class="container">
+        <a class="navbar-brand" href="https://azhadarshad.in" target="_blank" rel="noopener"><i class="fas fa-brain me-2"></i>NeuralArt</a>
+        <button class="navbar-toggler navbar-dark" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item"><a class="nav-link" href="https://azhadarshad.in" target="_blank" rel="noopener">Home</a></li>
+                <li class="nav-item"><a class="nav-link" href="https://azhadarshad.in" target="_blank" rel="noopener">Gallery</a></li>
+                <li class="nav-item"><a class="nav-link" href="https://azhadarshad.in" target="_blank" rel="noopener">Features</a></li>
+                <li class="nav-item"><a class="nav-link" href="https://azhadarshad.in" target="_blank" rel="noopener">Pricing</a></li>
+                <li class="nav-item"><a class="nav-link" href="https://azhadarshad.in" target="_blank" rel="noopener">Contact</a></li>
+            </ul>
+            <a href="https://azhadarshad.in" target="_blank" rel="noopener" class="btn btn-sm ms-3 rounded-pill px-4" style="background:linear-gradient(135deg,#6366f1,#a855f7);color:#fff;font-size:0.82rem;font-weight:600;border:none;">Portfolio ↗</a>
+            <a href="https://azhadarshad.in" target="_blank" rel="noopener" class="btn btn-sm btn-outline-light ms-2 rounded-pill px-4" style="border-color:rgba(255,255,255,0.12);color:#94a3b8;font-size:0.82rem;">Sign In</a>
+        </div>
+    </div>
+</nav>
+
+<div class="header-section">
+    <div class="container">
+        <div class="header-badge"><span class="dot"></span>AdaIN Neural Style Transfer</div>
+        <h1>STYLEFORGE AI</h1>
+        <p class="lead">Redefine Reality with AI-Powered Artistry</p>
+    </div>
+</div>
+
+<div class="container mb-5 fade-in-up">
+    <form method="post" enctype="multipart/form-data" id="uploadForm">
+        {{ form.hidden_tag() }}
+
+        <div class="row g-4">
+            <!-- Content Image -->
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header text-center">Content Source</div>
+                    <div class="card-body text-center p-4">
+                        <div class="preview-image mb-3" id="contentPreview">
+                            {% if content_image %}
+                                <img src="{{ url_for('send_image', filename=content_image) }}" alt="Content Image">
+                            {% else %}
+                                <i class="fas fa-image upload-icon"></i>
+                                <span>Select Content Image</span>
+                            {% endif %}
+                        </div>
+                        {{ form.content(class="form-control", onchange="previewFile(this, 'contentPreview')") }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Style Image -->
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header text-center">Style Reference</div>
+                    <div class="card-body text-center p-4">
+                        <div class="preview-image mb-3" id="stylePreview">
+                            {% if style_image %}
+                                <img src="{{ url_for('send_image', filename=style_image) }}" alt="Style Image">
+                            {% else %}
+                                <i class="fas fa-palette upload-icon"></i>
+                                <span>Select Style Image</span>
+                            {% endif %}
+                        </div>
+                        {{ form.style(class="form-control", onchange="previewFile(this, 'stylePreview')") }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="row justify-content-center mt-4">
+            <div class="col-md-8">
+                <div class="range-wrap">
+                    <span class="range-label">Style Strength</span>
+                    <div class="position-relative">
+                        <div class="range-value" id="rangeValue">1.0</div>
+                        {{ form.alpha(class="form-control-range", id="alphaRange", type="range", min="0", max="1", step="0.1") }}
+                    </div>
+                </div>
+                <div class="text-center mt-5">
+                    {{ form.submit(class="btn btn-primary shadow-lg btn-glow") }}
+                </div>
+            </div>
+        </div>
+    </form>
+
+    {% if result_image %}
+    <div class="row justify-content-center mt-5" id="resultSection">
+        <div class="col-md-8">
+            <div class="card result-card">
+                <div class="card-header result-header text-center py-3">Stylized Result</div>
+                <div class="card-body p-0">
+                    <img src="{{ url_for('send_image', filename=result_image) }}" class="img-fluid w-100" alt="Stylized Image" style="border-radius: 0 0 20px 20px;">
+                </div>
+                <div class="card-footer text-center" style="background:transparent;border-top:1px solid rgba(16,185,129,0.12);padding:1.25rem;">
+                    <a href="{{ url_for('send_image', filename=result_image) }}" download
+                       class="btn btn-sm btn-outline-light rounded-pill px-4"
+                       style="border-color:rgba(110,231,183,0.3);color:#6ee7b7;font-size:0.85rem;">
+                        <i class="fas fa-download me-2"></i>Download
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if error %}
+    <div class="alert mt-4 text-center" role="alert"
+         style="background:rgba(220,38,38,0.1);border:1px solid rgba(220,38,38,0.25);color:#fca5a5;border-radius:12px;">
+        <i class="fas fa-circle-exclamation me-2"></i><strong>Error:</strong> {{ error }}
+    </div>
+    {% endif %}
+</div>
+
+<!-- Examples -->
+<section class="container examples-section fade-in-up">
+    <div class="card">
+        <div class="card-header text-center">Examples</div>
+        <div class="card-body p-4">
+            <p class="text-center mb-4" style="color:#334155;font-size:0.88rem;">Content + Style &rarr; Stylized output</p>
+            <div class="row g-4">
+                <div class="col-12">
+                    <div class="example-flow">
+                        <div class="example-inputs">
+                            <div>
+                                <div class="example-role">Content</div>
+                                <img src="{{ url_for('send_example', filename='brad_pitt.jpg') }}" alt="Brad Pitt" class="example-image">
+                            </div>
+                            <div>
+                                <div class="example-role">Style</div>
+                                <img src="{{ url_for('send_example', filename='sketch.png') }}" alt="Sketch" class="example-image">
+                            </div>
+                        </div>
+                        <div class="example-arrow">&#8594;</div>
+                        <div class="example-output">
+                            <div class="example-role">Output</div>
+                            <img src="{{ url_for('send_example', filename='stylized_brad_pitt.jpg') }}" alt="Result" class="example-image">
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="example-flow">
+                        <div class="example-inputs">
+                            <div>
+                                <div class="example-role">Content</div>
+                                <img src="{{ url_for('send_example', filename='brad_pitt.jpg') }}" alt="Brad Pitt" class="example-image">
+                            </div>
+                            <div>
+                                <div class="example-role">Style</div>
+                                <img src="{{ url_for('send_example', filename='picasso_seated_nude_hr.jpg') }}" alt="Picasso" class="example-image">
+                            </div>
+                        </div>
+                        <div class="example-arrow">&#8594;</div>
+                        <div class="example-output">
+                            <div class="example-role">Output</div>
+                            <img src="{{ url_for('send_example', filename='stylized_brad_pitt (1).jpg') }}" alt="Result" class="example-image">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- FAQ -->
+<section class="container faq-section fade-in-up">
+    <div class="card">
+        <div class="card-header text-center">FAQs</div>
+        <div class="card-body p-4">
+            <div class="accordion" id="faqAccordion">
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="faqHeadingOne">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqOne">
+                            1. Is it a pretrained model?
+                        </button>
+                    </h2>
+                    <div id="faqOne" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">No, we train a model ourselves.</div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="faqHeadingTwo">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqTwo">
+                            2. Is it a free platform?
+                        </button>
+                    </h2>
+                    <div id="faqTwo" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">This demo is currently available as a free experience.</div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="faqHeadingThree">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqThree">
+                            3. Which styles of painting can be used?
+                        </button>
+                    </h2>
+                    <div id="faqThree" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">You can use almost any painting style — impressionist, abstract, cubist, watercolor, sketch, and more.</div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="faqHeadingFour">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqFour">
+                            4. Tech stack of the project?
+                        </button>
+                    </h2>
+                    <div id="faqFour" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">Python, PyTorch, Flask.</div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="faqHeadingFive">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqFive">
+                            5. Which dataset / how big is the data?
+                        </button>
+                    </h2>
+                    <div id="faqFive" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">The model is trained on large-scale image datasets.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer-section">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-lg-4 col-md-6">
+                <h5><i class="fas fa-brain me-2"></i>NeuralArt</h5>
+                <p class="mb-4" style="font-size:0.9rem;line-height:1.75;">"Every artist dips his brush in his own soul, and paints his own nature into his pictures."</p>
+                <p class="small" style="color:#1e293b;">Empowering creators with state-of-the-art AI tools to reimagine reality through artistic expression.</p>
+            </div>
+            <div class="col-lg-2 col-md-6">
+                <h5>Quick Links</h5>
+                <a href="https://azhadarshad.in" target="_blank" rel="noopener" class="footer-link">Home</a>
+                <a href="https://azhadarshad.in" target="_blank" rel="noopener" class="footer-link">About Us</a>
+                <a href="https://azhadarshad.in" target="_blank" rel="noopener" class="footer-link">Showcase</a>
+                <a href="https://azhadarshad.in" target="_blank" rel="noopener" class="footer-link">API Docs</a>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <h5>Contact Us</h5>
+                <a href="https://azhadarshad.in" target="_blank" rel="noopener" class="footer-link mb-2" style="font-size:0.88rem;"><i class="fas fa-globe me-2" style="color:#334155;"></i> azhadarshad.in</a>
+                <a href="https://azhadarshad.in" target="_blank" rel="noopener" class="footer-link mb-2" style="font-size:0.88rem;"><i class="fas fa-envelope me-2" style="color:#334155;"></i> azhadarshad.in</a>
+                <a href="https://azhadarshad.in" target="_blank" rel="noopener" class="footer-link mb-2" style="font-size:0.88rem;"><i class="fas fa-arrow-up-right-from-square me-2" style="color:#334155;"></i> azhadarshad.in</a>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <h5>Follow Us</h5>
+                <div class="d-flex mb-3">
+                    <a href="#" class="social-icon"><i class="fab fa-twitter"></i></a>
+                    <a href="#" class="social-icon"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#" class="social-icon"><i class="fab fa-instagram"></i></a>
+                    <a href="#" class="social-icon"><i class="fab fa-github"></i></a>
+                </div>
+                <p class="small" style="color:#1e293b;">Subscribe to our newsletter for the latest updates.</p>
+            </div>
+        </div>
+        <hr class="my-4" style="border-color:rgba(255,255,255,0.05);">
+        <div class="text-center small" style="color:#1e293b;">
+            &copy; 2025 NeuralArt Inc. All rights reserved. &nbsp;|&nbsp; Privacy Policy &nbsp;|&nbsp; Terms of Service
+        </div>
+    </div>
+</footer>
+
+<!-- Loader -->
+<div class="loader-overlay" id="loader">
+    <div class="cyber-spinner"></div>
+    <h3 style="font-family:'Orbitron',sans-serif;letter-spacing:3px;font-size:1rem;color:#e2e8f0;">PROCESSING</h3>
+    <p style="color:#334155;font-size:0.85rem;margin-top:0.5rem;">Neural network is dreaming…</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    function previewFile(input, previewId) {
+        const preview = document.getElementById(previewId);
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.addEventListener("load", () => {
+            preview.innerHTML = `<img src="${reader.result}" alt="Preview">`;
+        });
+        reader.readAsDataURL(file);
+    }
+
+    window.onload = function () {
+        if (document.getElementById('resultSection')) {
+            document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Neural canvas
+        const canvas = document.getElementById('neuralCanvas');
+        const ctx = canvas.getContext('2d');
+        let width, height, particles = [];
+        const mouse = { x: null, y: null, radius: 140 };
+
+        function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; }
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = (Math.random() - 0.5) * 0.45;
+                this.vy = (Math.random() - 0.5) * 0.45;
+                this.size = Math.random() * 2 + 1;
+                this.hue = Math.random() * 60 + 220;
+                this.density = Math.random() * 25 + 1;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                if (mouse.x != null) {
+                    const dx = mouse.x - this.x, dy = mouse.y - this.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < mouse.radius) {
+                        const f = (mouse.radius - dist) / mouse.radius;
+                        this.x -= (dx / dist) * f * this.density;
+                        this.y -= (dy / dist) * f * this.density;
+                    }
+                }
+                if (this.x < 0 || this.x > width)  this.vx *= -1;
+                if (this.y < 0 || this.y > height) this.vy *= -1;
+                this.hue = (this.hue + 0.15) % 360;
+            }
+            draw() {
+                ctx.fillStyle = `hsla(${this.hue},65%,65%,0.25)`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function initParticles() {
+            particles = [];
+            const n = Math.floor(window.innerWidth / 16);
+            for (let i = 0; i < n; i++) particles.push(new Particle());
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+            particles.forEach((p, i) => {
+                p.update(); p.draw();
+                for (let j = i + 1; j < particles.length; j++) {
+                    const p2 = particles[j];
+                    const d = Math.hypot(p.x - p2.x, p.y - p2.y);
+                    if (d < 90) {
+                        ctx.strokeStyle = `hsla(${p.hue},65%,65%,${0.12 * (1 - d / 90)})`;
+                        ctx.lineWidth = 0.8;
+                        ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+                    }
+                }
+            });
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('resize', () => { resize(); initParticles(); });
+        window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+        resize(); initParticles(); animate();
+
+        // Slider
+        const range = document.getElementById('alphaRange');
+        const rangeVal = document.getElementById('rangeValue');
+
+        function updateRange() {
+            const val = range.value, min = range.min || 0, max = range.max || 1;
+            const pct = ((val - min) * 100) / (max - min);
+            rangeVal.textContent = parseFloat(val).toFixed(1);
+            const offset = 12 - (pct * 24 / 100);
+            rangeVal.style.left = `calc(${pct}% + ${offset}px)`;
+            range.style.background = `linear-gradient(to right, #6366f1 0%, #a855f7 ${pct}%, rgba(15,23,42,0.9) ${pct}%, rgba(15,23,42,0.9) 100%)`;
+        }
+
+        if (range) { range.addEventListener('input', updateRange); updateRange(); }
+
+        // Loader on submit
+        document.getElementById('uploadForm').addEventListener('submit', () => {
+            document.getElementById('loader').classList.add('active');
+        });
+    };
+</script>
+</body>
+</html>

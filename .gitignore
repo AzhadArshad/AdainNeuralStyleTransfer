@@ -1,0 +1,32 @@
+# Ignore macOS system files
+.DS_Store
+**/.DS_Store
+
+# Ignore Python bytecode directories
+__pycache__/
+**/__pycache__/
+*.pyc
+
+.venv/
+env/
+venv/
+
+# Uploaded user images
+static/uploads/*
+!static/uploads/.gitkeep
+
+# Environment variables
+.env
+.env.*
+
+# Training experiments
+experiments/
+
+# Training datasets
+content_data/
+content_small/
+content_big/
+style_data/
+style_small/
+style_big/
+
