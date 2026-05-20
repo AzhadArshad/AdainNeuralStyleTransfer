@@ -1,8 +1,8 @@
 import os
+import gc
 import torch
-from flask import Flask, render_template, request, redirect, url_for, send_from_directory
+from flask import Flask, render_template, send_from_directory
 from flask_wtf import FlaskForm
-# from flask_bootstrap import Bootstrap
 from werkzeug.utils import secure_filename
 from wtforms import FileField, SubmitField, FloatField, HiddenField
 from wtforms.validators import InputRequired
@@ -62,10 +62,13 @@ def style_transfer(content_image, style_image, encoder, decoder, alpha, device):
         style_feats = encoder(style_image, is_test=True)
 
         stylized_feats = adaptive_instance_normalization(content_feats, style_feats)
-
         stylized_feats = alpha * stylized_feats + (1 - alpha) * content_feats
 
+        del content_feats, style_feats
+        gc.collect()
+
         stylized_image = decoder(stylized_feats)
+        del stylized_feats
 
     return stylized_image
 
